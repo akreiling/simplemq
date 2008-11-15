@@ -2,7 +2,10 @@
 %% @author Brian Smith
 %% @copyright 2008 Andrew Kreiling, Brian Smith. All Rights Reserved.
 %%
--define(log(Term), error_logger:info_report([{module, ?MODULE}, {pid, self()}, Term])).
+-define(debug(Args), logger:debug(?FILE, ?LINE, Args)).
+-define(log(Args), logger:info(?MODULE, Args)).
+-define(warn(Args), logger:warn(?MODULE, Args)).
+-define(error(Args), logger:error(?MODULE, Args)).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
