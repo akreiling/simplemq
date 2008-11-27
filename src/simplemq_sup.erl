@@ -28,7 +28,10 @@ init([]) ->
     Processes = [
         {simplemq_server,
             {simplemq_server, start_link, []},
-            permanent, brutal_kill, supervisor, [simplemq_server]}
+            permanent, brutal_kill, supervisor, [simplemq_server]},
+        {stomp_listener,
+            {stomp_listener, start_link, [61613]},
+            permanent, brutal_kill, supervisor, [stomp_listener]}
     ],
     ?log(started),
     {ok, {{one_for_one, 10, 10}, Processes}}.

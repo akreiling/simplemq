@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% External exports
--export([start_link/0, stop/0]).
+-export([start_link/0, stop/0, auth/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -36,6 +36,14 @@ start_link() ->
 %%
 stop() ->
     gen_server:cast(?MODULE, stop).
+
+%% @spec auth(Login, Password) -> ok
+%%
+%% @doc
+%% stop the simplemq_server
+%%
+auth(_Login, _Password) ->
+    ok.
 
 %% @spec init(Args) -> Result
 %% where
