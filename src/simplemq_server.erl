@@ -63,6 +63,8 @@ send(Destination, Body) ->
 %%
 init(_Args) ->
     process_flag(trap_exit, true),
+    ok = ensure_schema(),
+    ok = ensure_tables(),
     State = #state{},
     ?log(started),
     {ok, State}.
@@ -144,5 +146,23 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %%
 %%
+
+ensure_schema() ->
+    case mnesia:change_table_copy_type(schema, node(), disc_copies) of
+        {atomic, ok} -> ok;
+        {aborted, {already_exists, _, _, _}} -> ok;
+        Any ->
+            ?error({ensure_schema, Any}),
+            error
+    end.
+
+ensure_tables() ->
+    case mnesia:create_table(queue, [{disc_only_copies, [node()]}, {attributes, record_info(fields, queue)}]) of
+        {atomic, ok} -> ok;
+        {aborted, {already_exists, _}} -> ok;
+        Any ->
+            ?error({create_tables, Any}),
+            error
+    end.
 
 %% vim:sw=4:sts=4:ts=8:et
