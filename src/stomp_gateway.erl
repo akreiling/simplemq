@@ -19,7 +19,7 @@
 
 -record(frame, {command = [], headers = [], body = []}).
 -define(frame, Frame#frame).
--record(state, {timeout = 5000, socket, frames_in = 0, frames_out = 0, session, frame = #frame{}, buffer = []}).
+-record(state, {timeout = 5000, socket, ip_address, port, frames_in = 0, frames_out = 0, session, frame = #frame{}, buffer = []}).
 -define(state, State#state).
 
 -include("simplemq.hrl").
@@ -72,8 +72,21 @@ activate(Pid) ->
 %% gen_fsm callback
 %%
 init(Socket) ->
-    State = #state{ socket = Socket },
-    ?log([started]),
+    {ok, {Address, Port}} = inet:peername(Socket),
+    IP_Address = inet_parse:ntoa(Address),
+    Session = util:binary_to_hex(uuid:random()),
+    State = #state{
+        socket = Socket,
+        ip_address = IP_Address,
+        port = Port,
+        session = Session
+    },
+    ?log([
+            {ip, IP_Address},
+            {port, Port},
+            {session, Session},
+            started
+        ]),
     {ok, wait_for_activate, State}.
 
 %% @spec handle_event(Event, StateName, State) -> Result
@@ -97,17 +110,16 @@ handle_event({error, Reason, _Frame}, _StateName, State) ->
     {stop, Reason, State};
 
 handle_event(#frame{ command = "CONNECT", headers = Headers } = Frame, StateName, State) ->
-    Session = util:binary_to_hex(uuid:random()),
     Login = proplists:get_value("login", Headers),
     Passcode = proplists:get_value("passcode", Headers),
     case simplemq_server:auth(Login, Passcode) of
         ok ->
             F = #frame{
                 command = "CONNECTED",
-                headers = [{"session", Session}]
+                headers = [{"session", ?state.session}]
             },
             ok = send_frame(?state.socket, F),
-            {next_state, StateName, State#state{ session = Session }};
+            {next_state, StateName, State};
         _ ->
             gen_fsm:send_all_state_event(self(), {error, auth_failed, Frame}),
             {next_state, StateName, State}
@@ -117,7 +129,7 @@ handle_event(#frame{ command = "SUBSCRIBE", headers = Headers } = Frame, StateNa
     {next_state, StateName, State};
 
 handle_event(#frame{ command = "SEND", headers = Headers } = Frame, StateName, State) ->
-    {next_state, StateName, State};
+    {next_state, StateName, State#state{ frames_in = ?state.frames_in + 1 }};
 
 handle_event(Event, StateName, State) ->
     ?log([{state_name, StateName}, {handle_event, Event}]),
@@ -169,8 +181,15 @@ handle_info(Info, StateName, State) ->
 %% @doc
 %% gen_fsm callback
 %%
-terminate(_Reason, _StateName, _State) ->
-    ?log(stopped),
+terminate(_Reason, _StateName, State) ->
+    ?log([
+            {ip, ?state.ip_address},
+            {port, ?state.port},
+            {session, ?state.session},
+            {frames_in, ?state.frames_in},
+            {frames_out, ?state.frames_out},
+            stopped
+        ]),
     ok.
 
 %% @spec code_change(OldVsn, StateName, State, Extra) -> Result
