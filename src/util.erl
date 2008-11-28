@@ -10,4 +10,4 @@ nibble_to_hex(N) when N < 10 ->
 nibble_to_hex(N) when N >= 10, N < 16 ->
     $a + N - 10.
 
-%% vim:sw=4:sts=4:ts=4:et
+%% vim:sw=4:sts=4:ts=8:et

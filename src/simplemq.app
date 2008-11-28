@@ -12,4 +12,4 @@
         {env, []},
         {applications, [kernel, stdlib, crypto]}]}.
 
-%% vim:ft=erlang:sw=4:sts=4:ts=4:et
+%% vim:ft=erlang:sw=4:sts=4:ts=8:et

@@ -27,4 +27,4 @@ handle_accept(Socket) ->
     ok = gen_tcp:controlling_process(Socket, Pid),
     stomp_gateway:activate(Pid).
 
-%% vim:sw=4:sts=4:ts=4:et
+%% vim:sw=4:sts=4:ts=8:et

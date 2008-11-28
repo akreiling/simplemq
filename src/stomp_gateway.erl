@@ -357,4 +357,4 @@ keymerge(L1, L2) ->
 -ifdef(EUNIT).
 -endif.
 
-%% vim:sw=4:sts=4:ts=4:et
+%% vim:sw=4:sts=4:ts=8:et

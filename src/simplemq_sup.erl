@@ -26,6 +26,9 @@ start_link() ->
 %% @doc supervisor callback.
 init([]) ->
     Processes = [
+        {uuid,
+            {uuid, start_link, []},
+            permanent, brutal_kill, supervisor, [uuid]},
         {simplemq_server,
             {simplemq_server, start_link, []},
             permanent, brutal_kill, supervisor, [simplemq_server]},
@@ -36,4 +39,4 @@ init([]) ->
     ?log(started),
     {ok, {{one_for_one, 10, 10}, Processes}}.
 
-%% vim:sw=4:sts=4:ts=4:et
+%% vim:sw=4:sts=4:ts=8:et
