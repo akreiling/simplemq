@@ -15,10 +15,11 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
--export([start/0, start/1, start_link/0, start_link/1]).
+-export([start/0, start/1, start_link/0, start_link/1, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([v4/0, random/0, srandom/0, sha/2, md5/2, timestamp/2, to_string/1]).
+-export([v4/0, random/0, srandom/0, sha/2, md5/2, timestamp/0, timestamp/2, to_string/1]).
 
+-define(SERVER, ?MODULE).
 -define(UUID_DNS_NAMESPACE, <<107,167,184,16,157,173,17,209,128,180,0,192,79,212,48,200>>).
 -define(UUID_URL_NAMESPACE, <<107,167,184,17,157,173,17,209,128,180,0,192,79,212,48,200>>).
 -define(UUID_OID_NAMESPACE, <<107,167,184,18,157,173,17,209,128,180,0,192,79,212,48,200>>).
@@ -87,6 +88,15 @@ md5(Namespace, Name) ->
     U = crypto:md5_final(Context),
     format_uuid(U, 3).
 
+%% @spec timestamp() -> uuid()
+%% @doc
+%% Generates a UUID based on timestamp
+%%
+%% Requires that the uuid gen_server is started
+%%
+timestamp() ->
+    gen_server:call(?SERVER, timestamp).
+
 %% @spec timestamp(Node, CS) -> uuid()
 %% where
 %%      Node = binary()
@@ -116,13 +126,16 @@ start() ->
     start([]).
 
 start(Args) ->
-    gen_server:start({local, ?MODULE}, ?MODULE, Args, []).
+    gen_server:start({local, ?SERVER}, ?MODULE, Args, []).
 
 start_link() ->
     start_link([]).
 
 start_link(Args) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, Args, []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
+
+stop() ->
+    gen_server:cast(?SERVER, stop).
 
 init(Options) ->
     {A1,A2,A3} = proplists:get_value(seed, Options, erlang:now()),
@@ -131,6 +144,7 @@ init(Options) ->
         node = proplists:get_value(node, Options, <<0:48>>),
         clock_seq = random:uniform(65536)
     },
+    error_logger:info_report("uuid server started"),
     {ok, State}.
 
 handle_call(timestamp, _From, State) ->
@@ -151,6 +165,7 @@ handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->
+    error_logger:info_report("uuid server stopped"),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
