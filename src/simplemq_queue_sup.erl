@@ -3,9 +3,9 @@
 %% @copyright 2008 Andrew Kreiling, Brian Smith. All Rights Reserved.
 %%
 %% @doc
-%% Supervisor for the simplemq application.
+%% Supervisor for the simplemq_queue.
 %%
--module(simplemq_sup).
+-module(simplemq_queue_sup).
 -author('Andrew Kreiling <akreiling@pobox.com>').
 -author('Brian Smith').
 -behaviour(supervisor).
@@ -27,20 +27,11 @@ start_link() ->
 %% @doc supervisor callback.
 init([]) ->
     Processes = [
-        {uuid,
-            {uuid, start_link, []},
-            permanent, brutal_kill, supervisor, [uuid]},
-        {simplemq_queue_sup,
-            {simplemq_queue_sup, start_link, []},
-            transient, infinity, supervisor, [simplemq_queue_sup]},
-        {simplemq_server,
-            {simplemq_server, start_link, []},
-            permanent, brutal_kill, supervisor, [simplemq_server]},
-        {stomp_listener,
-            {stomp_listener, start_link, [61613]},
-            permanent, brutal_kill, supervisor, [stomp_listener]}
+        {simplemq_queue,
+            {simplemq_queue, start_link, []},
+            temporary, 60000, worker, [simplemq_queue]}
     ],
     ?log(started),
-    {ok, {{one_for_one, 10, 10}, Processes}}.
+    {ok, {{simple_one_for_one, 0, 1}, Processes}}.
 
 %% vim:sw=4:sts=4:ts=8:et

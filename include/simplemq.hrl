@@ -7,6 +7,9 @@
 -define(warn(Args), logger:warn(?MODULE, Args)).
 -define(error(Args), logger:error(?MODULE, Args)).
 
+-record(queue, {name, messages_in = 0, messages_out = 0}).
+-record(message, {id, status = "new", body}).
+
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.

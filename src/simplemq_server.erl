@@ -11,7 +11,8 @@
 -behaviour(gen_server).
 
 %% External exports
--export([start_link/0, stop/0, auth/2]).
+-export([start_link/0, stop/0]).
+-export([auth/2, subscribe/1, send/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -44,6 +45,14 @@ stop() ->
 %%
 auth(_Login, _Password) ->
     ok.
+
+%%
+subscribe(Destination) ->
+    gen_server:cast(?MODULE, {subscribe, self(), Destination}).
+
+%%
+send(Destination, Body) ->
+    gen_server:cast(?MODULE, {send, Destination, Body}).
 
 %% @spec init(Args) -> Result
 %% where
@@ -81,6 +90,14 @@ handle_call(Request, _From, State) ->
 %%
 handle_cast(stop, State) ->
     {stop, normal, State};
+
+handle_cast({subscribe, From, Destination}, State) ->
+    simplemq_queue:subscribe(Destination, From),
+    {noreply, State};
+
+handle_cast({send, Destination, Body}, State) ->
+    simplemq_queue:send(Destination, Body),
+    {noreply, State};
 
 handle_cast(Request, State) ->
     ?log({handle_cast, Request}),

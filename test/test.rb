@@ -14,6 +14,6 @@ end
 t = Benchmark.realtime do
   out_count.times { client.send('/queue/screenshots', 'This is a test') }
 end
-# sleep 5
+sleep 5
 puts "sent %d frames in %0.2fs (%0.2f frames/s)" % [out_count, t, out_count / t]
 puts "got %d frames" % [in_count]

@@ -126,9 +126,21 @@ handle_event(#frame{ command = "CONNECT", headers = Headers } = Frame, StateName
     end;
 
 handle_event(#frame{ command = "SUBSCRIBE", headers = Headers } = Frame, StateName, State) ->
+    case proplists:get_value("destination", Headers) of
+        undefined ->
+            gen_fsm:send_all_state_event(self(), {error, missing_destination, Frame});
+        Destination ->
+            simplemq_server:subscribe(Destination)
+    end,
     {next_state, StateName, State};
 
-handle_event(#frame{ command = "SEND", headers = Headers } = Frame, StateName, State) ->
+handle_event(#frame{ command = "SEND", headers = Headers, body = Body } = Frame, StateName, State) ->
+    case proplists:get_value("destination", Headers) of
+        undefined ->
+            gen_fsm:send_all_state_event(self(), {error, missing_destination, Frame});
+        Destination ->
+            simplemq_server:send(Destination, Body)
+    end,
     {next_state, StateName, State#state{ frames_in = ?state.frames_in + 1 }};
 
 handle_event(Event, StateName, State) ->
@@ -145,6 +157,19 @@ handle_event(Event, StateName, State) ->
 %% @doc
 %% gen_fsm callback
 %%
+handle_sync_event({message, Destination, MessageID, Body}, _From, StateName, State) ->
+    F = #frame{
+        command = "MESSAGE",
+        headers = [{"destination", Destination}, {"message-id", MessageID}],
+        body = Body
+    },
+    case send_frame(?state.socket, F) of
+        ok ->
+            {reply, ack, StateName, State#state{ frames_out = ?state.frames_out + 1 }};
+        {error, Reason} ->
+            {reply, {error, Reason}, StateName, State}
+    end;
+
 handle_sync_event(Event, _From, StateName, State) ->
     ?log([{state_name, StateName}, {handle_sync_event, Event}]),
     {reply, error, StateName, State}.

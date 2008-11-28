@@ -23,6 +23,7 @@ ensure_started(App) ->
 start() ->
     ok = ensure_started(crypto),
     ok = ensure_started(mnesia),
+    %% ok = mnesia:wait_for_tables([queue], infinity),
     application:start(simplemq).
 
 %% @spec stop() -> Result
